@@ -19,7 +19,7 @@ class AE(nn.Module):
             nn.ReLU(),
             nn.Linear(4, 10),
             nn.ReLU(),
-            nn.Linear(10, 20)  # Linear activation for reconstruction
+            nn.Linear(10, 20) 
         )
 
     def forward(self, x):
@@ -28,7 +28,6 @@ class AE(nn.Module):
         return decoded, encoded
 
 if __name__ == "__main__":
-    # Print model summary for verification
     model = AE()
     print(model)
 
