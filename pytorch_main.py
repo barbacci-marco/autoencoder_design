@@ -23,7 +23,7 @@ def load_train_data(filename="data.npz"):
     return train_data
 
 # -------------------------------
-# RBF Kernel and Expected Improvement
+# 3) RBF Kernel and Expected Improvement
 # -------------------------------
 def rbf_kernel(X1, X2, length_scale):
     X1 = np.atleast_2d(X1)
@@ -39,7 +39,7 @@ def expected_improvement(mu, sigma, f_best, xi=0.01):
     return (mu - f_best - xi) * Phi + sigma * phi
 
 # -------------------------------
-# 3) f1..f20 using (z1, z2)
+# 4) f1..f20 using (z1, z2)
 # -------------------------------
 def compute_f_values(z1, z2):
     f1  = z1
@@ -66,14 +66,11 @@ def compute_f_values(z1, z2):
                      f11, f12, f13, f14, f15, f16, f17, f18, f19, f20])
 
 # -------------------------------
-# 4) Objective: decode (z1,z2) -> 20D and compare with computed f_i(z1,z2)
+# 5) Objective: decode (z1,z2) -> 20D and compare with computed f_i(z1,z2)
 # -------------------------------
 class LatentObjectiveFunctionLS:
     def __init__(self, model, x_target):
-        """
-        model: a PyTorch AE model with .decoder that maps (1,2) -> (1,20).
-        x_target: a numpy array of shape (20,) representing the target.
-        """
+       
         self.model = model
         
 
@@ -83,21 +80,21 @@ class LatentObjectiveFunctionLS:
           SSE = sum_i (f_i(z1, z2) - x_recon[i])^2
         where:
           - f_i are computed from z1,z2 via compute_f_values,
-          - x_recon is the 20D output decoded from z.
+          - x_recon is the 20D output decoded from z1 and z2.
         """
         z1, z2 = z[0], z[1]
-        # Compute the 20 function values from (z1,z2)
+       
         f_vals = compute_f_values(z1, z2)
         
-        # Decode z -> 20-D output (x_recon)
-        z_np = np.array([[z1, z2]], dtype=np.float32)  # shape: (1,2)
+        # Decode
+        z_np = np.array([[z1, z2]], dtype=np.float32)  
         z_tensor = torch.tensor(z_np)
         self.model.eval()
         with torch.no_grad():
             x_recon_tensor = self.model.decoder(z_tensor)
         x_recon = x_recon_tensor.cpu().numpy()[0]  # shape: (20,)
         
-        # Compute SSE between f_vals and x_recon
+        # Compute SSE 
         diff = f_vals - x_recon
         return float(np.sum(diff**2))
 
@@ -114,11 +111,11 @@ def init_surrogate_from_train_data(obj_func, model, n_samples=None):
     train_data = load_train_data("data.npz")
     train_tensor = torch.tensor(train_data, dtype=torch.float32)
     with torch.no_grad():
-        # Assuming model.forward returns (decoded, encoded)
+        
         _, z_train = model(train_tensor)
     latent_candidates = z_train.cpu().numpy()  # shape: (num_train, latent_dim)
     
-    # Optionally subsample if n_samples is specified.
+    # subsample if n_samples is specified.
     if n_samples is not None and n_samples < latent_candidates.shape[0]:
         indices = np.random.choice(latent_candidates.shape[0], n_samples, replace=False)
         latent_candidates = latent_candidates[indices]
@@ -150,13 +147,13 @@ def latent_bo_optimizer_iterative(obj_func, bounds, n_iters=30, n_init=5, model=
     length_scale = 0.5
     
     for it in range(n_iters):
-        # Generate candidate points (random sampling within bounds)
+        # Generate candidate points 
         num_candidates = 100
         candidates = np.zeros((num_candidates, d))
         for j in range(d):
             candidates[:, j] = np.random.uniform(bounds[j][0], bounds[j][1], num_candidates)
         
-        # Build covariance matrix for current training data.
+        # Build covariance matrix for current data
         K = rbf_kernel(X_train, X_train, length_scale) + alpha**2 * np.eye(len(X_train))
         L = np.linalg.cholesky(K)
         
@@ -180,7 +177,7 @@ def latent_bo_optimizer_iterative(obj_func, bounds, n_iters=30, n_init=5, model=
         x_next = candidates[best_idx]
         y_next = obj_func.fun_test(x_next)
         
-        # Append new observation.
+        
         X_train = np.vstack([X_train, x_next])
         y_train = np.append(y_train, y_next)
         
@@ -199,22 +196,19 @@ def latent_bo_optimizer_iterative(obj_func, bounds, n_iters=30, n_init=5, model=
 # 7) Main Example
 # -------------------------------
 def main():
-    # A) Load training data.
+    
     train_data = load_train_data("data.npz")
     print(f"Train data shape: {train_data.shape}")
-    # Use the first row as the target for demonstration.
     x_target = train_data[0]
     
-    # B) Load the autoencoder model.
     ae_model = load_autoencoder_model("autoencoder_weights.pt")
     
-    # C) Create the objective function.
+
     ls_obj = LatentObjectiveFunctionLS(ae_model, x_target)
-    
-    # D) Define bounds for z1 and z2.
+
+    #define latent bounds
     bounds_latent = [[-5, 5], [-5, 5]]
     
-    # E) Run Bayesian Optimization, passing the model.
     n_iters = 100
     best_z, best_obj, history = latent_bo_optimizer_iterative(ls_obj, bounds_latent, n_iters=n_iters, n_init=150, model=ae_model)
     
@@ -222,7 +216,6 @@ def main():
     print(f"Best latent point found: {best_z}")
     print(f"Best objective value: {best_obj}")
     
-    # F) Plot the objective over iterations.
     plt.figure(figsize=(8, 5))
     plt.plot(history, marker='o', linestyle='-', color='b')
     plt.xlabel('BO Iteration')
@@ -230,9 +223,8 @@ def main():
     plt.title('Objective Value over BO Iterations')
     plt.grid(True)
     plt.show()
-    
-    # G) Decode the best latent point to compare.
-    z1, z2 = best_z[0], best_z[1]
+
+    z1, z2 = best_z[0], best_z[1] #best latent point is decoded to compare results of optimisation
     z_tensor = torch.tensor([[z1, z2]], dtype=torch.float32)
     ae_model.eval()
     with torch.no_grad():
