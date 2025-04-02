@@ -6,18 +6,13 @@ from torch.utils.data import DataLoader, TensorDataset
 from vae_model_pytorch import AE
 
 def load_data(filename='data.npz'):
-    """
-    Loads training data from a .npz file.
-    Assumes that the training data is stored with the key 'train_data'.
-    """
+  
     data = np.load(filename)
     train_data = data['train_data'].astype(np.float32)
     return train_data
 
 def apply_he_init(model):
-    """
-    Applies He (Kaiming) Normal initialization to all nn.Linear layers in the model.
-    """
+   
     for m in model.modules():
         if isinstance(m, nn.Linear):
             torch.nn.init.kaiming_normal_(m.weight, nonlinearity='relu')
@@ -52,7 +47,6 @@ def train_autoencoder(epochs=100, batch_size=32, learning_rate=1e-3, l1_reg=1e-5
             
             outputs, encoded = model(inputs)
             mse_loss = criterion(outputs, inputs)
-            # Apply L1 regularization on the encoded representation (bottleneck)
             l1_loss = l1_reg * torch.norm(encoded, 1)
             loss = mse_loss + l1_loss
             
@@ -63,7 +57,6 @@ def train_autoencoder(epochs=100, batch_size=32, learning_rate=1e-3, l1_reg=1e-5
         epoch_loss = running_loss / len(dataset)
         print(f"Epoch {epoch+1}/{epochs}, Loss: {epoch_loss:.6f}")
         
-        # Save the model weights if loss improves
         if epoch_loss < best_loss:
             best_loss = epoch_loss
             torch.save(model.state_dict(), "autoencoder_weights.pt")
