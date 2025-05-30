@@ -14,12 +14,12 @@ from vae_model_pytorch import AE
 SEED = 42
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def set_seed (seed: int=SEED) -> None: 
+def set_seed (seed: int=SEED): 
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     
-# ---------- I/O helpers ----------
+#Utils
 def load_data(filename: str = "data.npz", test_size: float = 0.20, seed: int = 42):
     """
     Loads data and returns (train_val_tensor, test_tensor).
@@ -43,6 +43,8 @@ def apply_he_init(model):
             nn.init.kaiming_normal_(m.weight, nonlinearity="relu")
             if m.bias is not None:
                 m.bias.data.zero_()
+                
+# I'm not sure if the objective function is being set correctly, the optimisation results do not match with the train_vae.py script
 def objective_train (x, x_test):
     
     def objective(params: Dict[str, Any]):
@@ -102,7 +104,6 @@ if __name__ == "__main__":
         algo=tpe.suggest,
         max_evals = 50,
         trials= trials
-        
     )
     print(best)
     
