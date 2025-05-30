@@ -261,7 +261,7 @@ def plot_training_progress(
 # -----------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    set_seed()
+    set_seed(42)
     kfold_train(
     k = 5,
     epochs= 1000,
