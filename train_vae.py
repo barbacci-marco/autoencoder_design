@@ -16,7 +16,6 @@ SEED = 42
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def set_seed(seed: int = SEED) -> None:
-    """Ensure deterministic behaviour across NumPy and PyTorch (CPU & CUDA)."""
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -29,12 +28,7 @@ def set_seed(seed: int = SEED) -> None:
 # -----------------------------------------------------------------------------------------------------
 
 def load_data(filename: str = "data.npz"):
-    """Load train/val tensor and test tensor from an *npz* file.
-
-    The file **must** contain at least the key ``"train_data"``.
-    If a ``"test_data"`` key is present we treat it as the held‑out test set;
-    otherwise the function raises.
-    """
+    
     data = np.load(filename)
 
     if "train_data" not in data:
